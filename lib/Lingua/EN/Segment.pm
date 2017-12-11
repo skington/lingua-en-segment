@@ -27,6 +27,19 @@ words glommed together without spaces or hyphens. This module uses some mild
 cunning and a large list of known words from Google to try and work out how
 the string should be split into words.
 
+=head2 new
+
+ Out: $segmenter
+
+Returns a Lingua::EN::Segment object.
+
+=cut
+
+sub new {
+	my $package = shift;
+	return bless {} => ref($package) || $package;
+}
+
 =head1 ACKNOWLEDGEMENTS
 
 This code is based on
