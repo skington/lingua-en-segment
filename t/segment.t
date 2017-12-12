@@ -80,7 +80,7 @@ expect_segments(
         oozy smell nor yet a dry bare sandy hole with nothing in it to
         sit down on or to eat it was a hobbit hole and that means comfort)
 );
-expect_segment(
+expect_segments(
           'faroutintheunchartedbackwatersoftheunfashionable'
         . 'endofthewesternspiralarmofthegalaxy'
         . 'liesasmallunregardedyellowsun' =>
