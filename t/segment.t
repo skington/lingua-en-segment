@@ -1,6 +1,5 @@
 #!/usr/bin/env perl
-# Tests simple matches: where you can split a string into words just by looking
-# for things that inherently look like words.
+# Test that we segment strings properly.
 
 use strict;
 use warnings;
@@ -47,6 +46,8 @@ expect_segments(
         qw(as gregor samsa awoke one morning from uneasy dreams
         he found himself transformed in his bed into a gigantic insect)
 );
+
+# Complex tests that need bigram support.
 expect_segments(
           'inaholeinthegroundtherelivedahobbit'
         . 'notanastydirtywetholefilledwiththeendsofwormsandan'
