@@ -95,7 +95,7 @@ sub segment {
     return @{ ((sort { $b->[0] <=> $a->[0] } @probability)[0])->[1] };
 }
 
-memoize('_find_all_possible_segments', NORMALIZER => sub { @_[1] });
+memoize('_find_all_possible_segments', NORMALIZER => sub { $_[1] });
 sub _find_all_possible_segments {
 	my ($self, $unsegmented_string) = @_;
 
