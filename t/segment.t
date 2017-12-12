@@ -67,6 +67,8 @@ expect_segments(
 	),
 );
 
+### TODO: words where we don't recognise part of the input 
+
 # Complex tests that need bigram support.
 expect_segments(
           'inaholeinthegroundtherelivedahobbit'

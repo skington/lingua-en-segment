@@ -11,6 +11,7 @@ use Carp;
 use English qw(-no_match_vars);
 use File::ShareDir;
 use List::Util qw(min);
+use Memoize;
 
 =head1 NAME
 
@@ -76,13 +77,25 @@ sub segment {
 	my ($self, $unsegmented_string) = @_;
 
 	# Divide this string into all the possible segments.
-	my @segments = $self->_find_all_possible_segments($unsegmented_string);
-	return if !@segments;
-	
-	### FIXME: bah, just throw all of this work away and return something.
-	return $unsegmented_string;
+	my @segment_lists = $self->_find_all_possible_segments($unsegmented_string);
+	return if !@segment_lists;
+
+	# Work out the naive cumulative probability of all of these segments.
+	my $unigrams = $self->unigrams;
+	my @probability;
+	for my $segment_list (@segment_lists) {
+		my $likelihood = 1;
+		for my $word (@$segment_list) {
+			$likelihood *= $unigrams->{$word}; ### FIXME: Don't default to 0!
+		}
+		push @probability, [ $likelihood, $segment_list];
+	}
+
+    # Whichever probability is the highest must be the answer.
+    return @{ ((sort { $b->[0] <=> $a->[0] } @probability)[0])->[1] };
 }
 
+memoize('_find_all_possible_segments', NORMALIZER => sub { @_[1] });
 sub _find_all_possible_segments {
 	my ($self, $unsegmented_string) = @_;
 
@@ -122,12 +135,14 @@ sub unigrams {
         my $unigram_filename = $self->dist_dir . '/count_1w.txt';
         open(my $fh, '<', $unigram_filename)
             or croak "Couldn't read unigrams from $unigram_filename: $OS_ERROR";
-		my %likelihood;
+		my (%count, $total_count);
 		while (<$fh>) {
 			chomp;
-			my ($word, $score) = split(/\t+/, $_);
-			$likelihood{$word} = $score;
+			my ($word, $count) = split(/\t+/, $_);
+			$count{$word} = $count;
+			$total_count += $count;
 		}
+		my %likelihood = map { $_ => $count{$_} / $total_count } %count;
 		\%likelihood;
 	};
 }
