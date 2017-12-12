@@ -7,6 +7,10 @@ no warnings 'uninitialized';
 our $VERSION = '0.001';
 $VERSION = eval $VERSION;
 
+use Carp;
+use English qw(-no_match_vars);
+use File::ShareDir;
+
 =head1 NAME
 
 Lingua::EN::Segment - split English-language domain names etc. into words
@@ -37,7 +41,9 @@ Returns a Lingua::EN::Segment object.
 
 sub new {
 	my $package = shift;
-	return bless {} => ref($package) || $package;
+	my %args = @_;
+	$args{dist_dir} ||= File::ShareDir::dist_dir('Lingua-EN-Segment');
+	return bless \%args => ref($package) || $package;
 }
 
 =head2 segment
@@ -56,6 +62,34 @@ sub segment {
 
 	### TODO: actually do something with this.
 	return $unsegmented_string;
+}
+
+=head2 unigrams
+
+ Out: \%unigrams
+
+Returns a hashref of word => likelihood to appear in Google's huge list of
+words that they got off the Internet. The higher the likelihood, the more
+likely that this is a genuine regularly-used word, rather than an obscure
+word or a typo.
+
+=cut
+
+sub unigrams {
+	my ($self) = @_;
+
+	return $self->{unigrams} ||= do {
+        my $unigram_filename = $self->{dist_dir} . '/count_1w.txt';
+        open(my $fh, '<', $unigram_filename)
+            or croak "Couldn't read unigrams from $unigram_filename: $OS_ERROR";
+		my %likelihood;
+		while (<$fh>) {
+			chomp;
+			my ($word, $score) = split(/\t+/, $_);
+			$likelihood{$word} = $score;
+		}
+		\%likelihood;
+	};
 }
 
 =head1 ACKNOWLEDGEMENTS
