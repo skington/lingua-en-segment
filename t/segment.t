@@ -5,7 +5,9 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
-use Test::More;
+use Test::File::ShareDir -share =>
+    { -dist => { 'Lingua-EN-Segment' => 'share' } };
+	use Test::More;
 
 # Pull in the segmenter library.
 use_ok('Lingua::EN::Segment');
@@ -13,6 +15,7 @@ my $segmenter = Lingua::EN::Segment->new;
 isa_ok($segmenter, 'Lingua::EN::Segment');
 
 # All tests from the book. First some simple stuff.
+expect_segments('', ());
 expect_segments('thisisatest', qw(this is a test));
 expect_segments(
     'wheninthecourseofhumaneventsitbecomesnecessary',

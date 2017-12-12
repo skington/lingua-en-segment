@@ -6,9 +6,8 @@ use warnings;
 no warnings 'uninitialized';
 
 use Test::More;
-use Test::File::ShareDir -share => {
-	-dist => { 'Lingua-EN-Segment' => 'share' }
-};
+use Test::File::ShareDir -share =>
+    { -dist => { 'Lingua-EN-Segment' => 'share' } };
 
 # Pull in the segmenter library.
 use_ok('Lingua::EN::Segment');

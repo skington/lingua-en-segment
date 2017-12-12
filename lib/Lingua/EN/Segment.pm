@@ -60,6 +60,7 @@ string.
 sub segment {
 	my ($self, $unsegmented_string) = @_;
 
+	return if !length($unsegmented_string);
 	### TODO: actually do something with this.
 	return $unsegmented_string;
 }
