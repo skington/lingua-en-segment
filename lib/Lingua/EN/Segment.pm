@@ -40,6 +40,24 @@ sub new {
 	return bless {} => ref($package) || $package;
 }
 
+=head2 segment
+
+ In: $unsegmented_string
+ Out: @words
+
+Supplied with an unsegmented string - e.g. a domain name - returns a list of
+words that are most statistically likely to be the words that make up this
+string.
+
+=cut
+
+sub segment {
+	my ($self, $unsegmented_string) = @_;
+
+	### TODO: actually do something with this.
+	return $unsegmented_string;
+}
+
 =head1 ACKNOWLEDGEMENTS
 
 This code is based on
