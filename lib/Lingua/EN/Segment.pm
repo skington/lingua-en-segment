@@ -10,6 +10,7 @@ $VERSION = eval $VERSION;
 use Carp;
 use English qw(-no_match_vars);
 use File::ShareDir;
+use List::Util qw(min);
 
 =head1 NAME
 
@@ -40,10 +41,24 @@ Returns a Lingua::EN::Segment object.
 =cut
 
 sub new {
-	my $package = shift;
-	my %args = @_;
-	$args{dist_dir} ||= File::ShareDir::dist_dir('Lingua-EN-Segment');
+	my ($package, %args) = @_;
+
 	return bless \%args => ref($package) || $package;
+}
+
+=head2 dist_dir
+
+ Out: $dist_dir
+
+Returns the name of the directory where distribution-specific files are
+installed.
+
+=cut
+
+sub dist_dir {
+	my ($self) = @_;
+
+	$self->{dist_dir} ||= File::ShareDir::dist_dir('Lingua-EN-Segment');
 }
 
 =head2 segment
@@ -60,9 +75,33 @@ string.
 sub segment {
 	my ($self, $unsegmented_string) = @_;
 
-	return if !length($unsegmented_string);
-	### TODO: actually do something with this.
+	# Divide this string into all the possible segments.
+	my @segments = $self->_find_all_possible_segments($unsegmented_string);
+	return if !@segments;
+	
+	### FIXME: bah, just throw all of this work away and return something.
 	return $unsegmented_string;
+}
+
+sub _find_all_possible_segments {
+	my ($self, $unsegmented_string) = @_;
+
+	return if !length($unsegmented_string);
+
+	my @segments;
+	# Go through looking for possible words. The longest word in the corpus
+	# that is actually a word (as opposed to come-ons stuck together)
+	# is currently 31 characters.
+	for my $prefix_length (1..min(length($unsegmented_string), 31)) {
+		my $prefix = substr($unsegmented_string, 0, $prefix_length);
+		if (my $suffix = substr($unsegmented_string, $prefix_length)) {
+			my @subsegments = $self->_find_all_possible_segments($suffix);
+			push @segments, map { [$prefix, @$_] } @subsegments;
+		} else {
+			push @segments, [$prefix];
+		}
+	}
+	return @segments;
 }
 
 =head2 unigrams
@@ -80,7 +119,7 @@ sub unigrams {
 	my ($self) = @_;
 
 	return $self->{unigrams} ||= do {
-        my $unigram_filename = $self->{dist_dir} . '/count_1w.txt';
+        my $unigram_filename = $self->dist_dir . '/count_1w.txt';
         open(my $fh, '<', $unigram_filename)
             or croak "Couldn't read unigrams from $unigram_filename: $OS_ERROR";
 		my %likelihood;

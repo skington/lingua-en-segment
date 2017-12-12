@@ -15,7 +15,7 @@ isa_ok($segmenter, 'Lingua::EN::Segment');
 # We split up words into segments correctly.
 is_deeply([$segmenter->_find_all_possible_segments('')], [],
     q{Trivially, the empty string doesn't split});
-is_deeply([$segmenter->_find_all_possible_segments('a')], ['a'],
+is_deeply([$segmenter->_find_all_possible_segments('a')], [['a']],
     'Trivially, one-letter strings only split one way');
 is_deeply(
     [$segmenter->_find_all_possible_segments('ab')],
@@ -24,7 +24,7 @@ is_deeply(
 );
 is_deeply(
     [$segmenter->_find_all_possible_segments('abc')],
-    [['a', 'b', 'c'], ['a', 'bc'], ['abc'], ['ab', 'c']],
+    [['a', 'b', 'c'], ['a', 'bc'], ['ab', 'c'], ['abc']],
     'Three-letter strings split in a number of ways'
 );
 
