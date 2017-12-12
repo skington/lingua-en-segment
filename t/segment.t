@@ -47,7 +47,24 @@ expect_segments(
           'asgregorsamsaawokeonemorningfromuneasydreams'
         . 'hefoundhimselftransformedinhisbedintoagiganticinsect' =>
         qw(as gregor samsa awoke one morning from uneasy dreams
-        he found himself transformed in his bed into a gigantic insect)
+        he found himself transformed in his bed into a gigantic insect),
+);
+
+# Long words that would be ignored by a crude 20-character limit
+expect_segments(
+    'electroencephalographyisagoodthingyouguys' => qw(
+        electroencephalography is a good thing you guys
+    ),
+);
+expect_segments(
+	'wtfisglucuronosyltransferaseanybody' => qw(
+		wtf is glucuronosyltransferase anybody
+	),
+);
+expect_segments(
+	'chemicalcompoundslikeacetylgalactosaminyltransferaseareamouthful' => qw(
+		chemical compounds like acetylgalactosaminyltransferase are a mouthful
+	),
 );
 
 # Complex tests that need bigram support.
