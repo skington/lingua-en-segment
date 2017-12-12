@@ -73,48 +73,47 @@ string.
 
 =cut
 
+memoize('segment', NORMALIZER => sub { $_[1] });
 sub segment {
-	my ($self, $unsegmented_string) = @_;
-
-	# Divide this string into all the possible segments.
-	my @segment_lists = $self->_find_all_possible_segments($unsegmented_string);
-	return if !@segment_lists;
-
-	# Work out the naive cumulative probability of all of these segments.
-	my $unigrams = $self->unigrams;
-	my @probability;
-	for my $segment_list (@segment_lists) {
-		my $likelihood = 1;
-		for my $word (@$segment_list) {
-			$likelihood *= $unigrams->{$word}; ### FIXME: Don't default to 0!
-		}
-		push @probability, [ $likelihood, $segment_list];
-	}
-
-    # Whichever probability is the highest must be the answer.
-    return @{ ((sort { $b->[0] <=> $a->[0] } @probability)[0])->[1] };
-}
-
-memoize('_find_all_possible_segments', NORMALIZER => sub { $_[1] });
-sub _find_all_possible_segments {
 	my ($self, $unsegmented_string) = @_;
 
 	return if !length($unsegmented_string);
 
-	my @segments;
-	# Go through looking for possible words. The longest word in the corpus
-	# that is actually a word (as opposed to come-ons stuck together)
-	# is currently 31 characters.
+	# Work out all the possible words at the beginning of this string.
+	# (31 characters is the longest word in our corpus that is genuinely
+	# a real word, and not other words glommed together.)
+	# Then run this whole algorithm on the remainder, thus effectively
+	# working on the string from both the front and the back.
+	my @possible_segments;
 	for my $prefix_length (1..min(length($unsegmented_string), 31)) {
-		my $prefix = substr($unsegmented_string, 0, $prefix_length);
-		if (my $suffix = substr($unsegmented_string, $prefix_length)) {
-			my @subsegments = $self->_find_all_possible_segments($suffix);
-			push @segments, map { [$prefix, @$_] } @subsegments;
-		} else {
-			push @segments, [$prefix];
-		}
+		push @possible_segments, [
+			substr($unsegmented_string, 0, $prefix_length),
+			$self->segment(substr($unsegmented_string, $prefix_length))
+		];
 	}
-	return @segments;
+
+	# We can now work out the cumulative probability of all of these segments.
+	return @{
+		(
+            map  { $_->[1] }
+            sort { $b->[0] <=> $a->[0] }
+            map  {
+				my $segment = $_;
+				[$self->_cumulative_probability($segment), $segment]
+			} @possible_segments
+		)[0]
+	};
+}
+
+sub _cumulative_probability {
+	my ($self, $segments) = @_;
+
+	my $likelihood = 1;
+	my $unigrams = $self->unigrams;
+	for my $word (@$segments) {
+		$likelihood *= $unigrams->{$word} || $unigrams->{__unknown__}->($word);
+	}
+	return $likelihood;
 }
 
 =head2 unigrams
@@ -143,6 +142,10 @@ sub unigrams {
 			$total_count += $count;
 		}
 		my %likelihood = map { $_ => $count{$_} / $total_count } %count;
+		$likelihood{__unknown__} = sub {
+			my $word = shift;
+			return 10 / ($total_count * 10 ** length($word));
+		};
 		\%likelihood;
 	};
 }
