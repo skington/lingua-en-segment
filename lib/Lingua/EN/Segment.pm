@@ -81,6 +81,10 @@ sub segment {
     return map { $_->{word} } @segments;
 }
 
+# Supplied with an unsegmented string and the previous word (or '<S>'
+# if this is the beginning of the input string), splits up the unsegmented
+# string into a word and a remainder, segments the remainder in turn,
+# and returns the most likely match.
 memoize('_segment', NORMALIZER => sub { "$_[1] $_[2]" });
 sub _segment {
     my ($self, $unsegmented_string, $previous_word) = @_;
@@ -119,6 +123,9 @@ sub _segment {
     };
 }
 
+# Supplied with an arrayref of segments, multiplies all their probabilities
+# together to get a total probability.
+
 sub _cumulative_probability {
     my ($self, $segments) = @_;
 
@@ -128,6 +135,10 @@ sub _cumulative_probability {
     }
     return $overall_probability;
 }
+
+# Supplied with a word and the previous word, returns the probability of it
+# matching something legitimate, either from the bigram corpus, or falling back
+# to the unigram corpus.
 
 memoize('_probability', NORMALIZER => sub { "$_[1] $_[2]" });
 sub _probability {
