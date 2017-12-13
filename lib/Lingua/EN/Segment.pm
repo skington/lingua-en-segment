@@ -75,9 +75,10 @@ string.
 
 memoize('segment', NORMALIZER => sub { $_[1] });
 sub segment {
-	my ($self, $unsegmented_string) = @_;
+	my ($self, $unsegmented_string, $previous_word) = @_;
 
 	return if !length($unsegmented_string);
+	$previous_word ||= '<S>';
 
 	# Work out all the possible words at the beginning of this string.
 	# (31 characters is the longest word in our corpus that is genuinely
@@ -86,34 +87,58 @@ sub segment {
 	# working on the string from both the front and the back.
 	my @possible_segments;
 	for my $prefix_length (1..min(length($unsegmented_string), 31)) {
-		push @possible_segments, [
-			substr($unsegmented_string, 0, $prefix_length),
-			$self->segment(substr($unsegmented_string, $prefix_length))
-		];
+        my $current_word = substr($unsegmented_string, 0, $prefix_length);
+        push @possible_segments,
+            [
+            $current_word,
+            $self->segment(
+                substr($unsegmented_string, $prefix_length),
+                $current_word
+            )
+            ];
 	}
 
 	# We can now work out the cumulative probability of all of these segments.
-	return @{
-		(
-            map  { $_->[1] }
-            sort { $b->[0] <=> $a->[0] }
-            map  {
-				my $segment = $_;
-				[$self->_cumulative_probability($segment), $segment]
-			} @possible_segments
-		)[0]
-	};
+        return @{
+            (
+                map      { $_->[1] }
+                sort { $b->[0] <=> $a->[0] }
+                map {
+                    my $segments = $_;
+                    [
+                        $self->_cumulative_probability(
+                            $segments, $previous_word
+                        ),
+                        $segments
+                    ]
+                } @possible_segments
+            )[0]
+        };
 }
 
 sub _cumulative_probability {
-	my ($self, $segments) = @_;
+	my ($self, $segments, $previous_word) = @_;
 
-	my $likelihood = 1;
-	my $unigrams = $self->unigrams;
-	for my $word (@$segments) {
-		$likelihood *= $unigrams->{$word} || $unigrams->{__unknown__}->($word);
-	}
-	return $likelihood;
+    my $overall_probability = 1;
+    for my $word (@$segments) {
+        my $this_probability;
+        my $biword = $previous_word . ' ' . $word;
+        if (exists $self->bigrams->{$biword}) {
+            $this_probability = $self->bigrams->{$biword}
+                / $self->_unigram_probability($previous_word);
+        } else {
+            $this_probability = $self->_unigram_probability($word);
+        }
+        $overall_probability *= $this_probability;
+        $previous_word = $word;
+    }
+	return $overall_probability;
+}
+
+sub _unigram_probability {
+	my ($self, $word) = @_;
+
+	return $self->unigrams->{$word} || $self->unigrams->{__unknown__}->($word);
 }
 
 =head2 unigrams
@@ -130,25 +155,45 @@ word or a typo.
 sub unigrams {
 	my ($self) = @_;
 
-	return $self->{unigrams} ||= do {
-        my $unigram_filename = $self->dist_dir . '/count_1w.txt';
-        open(my $fh, '<', $unigram_filename)
-            or croak "Couldn't read unigrams from $unigram_filename: $OS_ERROR";
-		my (%count, $total_count);
-		while (<$fh>) {
-			chomp;
-			my ($word, $count) = split(/\t+/, $_);
-			$count{$word} = $count;
-			$total_count += $count;
-		}
-		my %likelihood = map { $_ => $count{$_} / $total_count } %count;
-		$likelihood{__unknown__} = sub {
-			my $word = shift;
-			return 10 / ($total_count * 10 ** length($word));
-		};
-		\%likelihood;
-	};
+	return $self->{unigrams} ||= $self->_read_file('count_1w.txt');
 }
+
+=head2 bigrams
+
+ Out: \%bigrams
+
+As L<unigrams>, but returns a lookup table of "word1 word2" => likelihood
+for combinations of words.
+
+=cut
+
+sub bigrams {
+	my ($self) = @_;
+
+	return $self->{bigrams} ||= $self->_read_file('count_2w.txt');
+}
+
+sub _read_file {
+    my ($self, $filename) = @_;
+
+    my $full_filename = $self->dist_dir . '/' . $filename;
+    open(my $fh, '<', $full_filename)
+        or croak "Couldn't read unigrams from $full_filename: $OS_ERROR";
+    my (%count, $total_count);
+    while (<$fh>) {
+        chomp;
+        my ($word, $count) = split(/\t+/, $_);
+        $count{$word} = $count;
+        $total_count += $count;
+    }
+    my %likelihood = map { $_ => $count{$_} / $total_count } %count;
+    $likelihood{__unknown__} = sub {
+        my $word = shift;
+        return 10 / ($total_count * 10**length($word));
+    };
+    return \%likelihood;
+}
+
 
 =head1 ACKNOWLEDGEMENTS
 
