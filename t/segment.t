@@ -93,9 +93,13 @@ expect_segments(
 done_testing();
 
 sub expect_segments {
-	my ($unsegmented_string, @expected_words) = @_;
+    my ($unsegmented_string, @expected_words) = @_;
 
-	my @words = $segmenter->segment($unsegmented_string);
-        is_deeply(\@words, \@expected_words,
-            "Correct result for $unsegmented_string");
+    my @words = $segmenter->segment($unsegmented_string);
+    is_deeply(\@words, \@expected_words,
+        "Correct result for $unsegmented_string")
+        or diag 'Expected '
+        . join(' ', @expected_words)
+        . "\nGot "
+        . join(' ', @words);
 }
