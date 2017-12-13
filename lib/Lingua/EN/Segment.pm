@@ -42,9 +42,9 @@ Returns a Lingua::EN::Segment object.
 =cut
 
 sub new {
-	my ($package, %args) = @_;
+    my ($package, %args) = @_;
 
-	return bless \%args => ref($package) || $package;
+    return bless \%args => ref($package) || $package;
 }
 
 =head2 dist_dir
@@ -57,9 +57,9 @@ installed.
 =cut
 
 sub dist_dir {
-	my ($self) = @_;
+    my ($self) = @_;
 
-	$self->{dist_dir} ||= File::ShareDir::dist_dir('Lingua-EN-Segment');
+    $self->{dist_dir} ||= File::ShareDir::dist_dir('Lingua-EN-Segment');
 }
 
 =head2 segment
@@ -75,18 +75,18 @@ string.
 
 memoize('segment', NORMALIZER => sub { $_[1] });
 sub segment {
-	my ($self, $unsegmented_string, $previous_word) = @_;
+    my ($self, $unsegmented_string, $previous_word) = @_;
 
-	return if !length($unsegmented_string);
-	$previous_word ||= '<S>';
+    return if !length($unsegmented_string);
+    $previous_word ||= '<S>';
 
-	# Work out all the possible words at the beginning of this string.
-	# (31 characters is the longest word in our corpus that is genuinely
-	# a real word, and not other words glommed together.)
-	# Then run this whole algorithm on the remainder, thus effectively
-	# working on the string from both the front and the back.
-	my @possible_segments;
-	for my $prefix_length (1..min(length($unsegmented_string), 31)) {
+    # Work out all the possible words at the beginning of this string.
+    # (31 characters is the longest word in our corpus that is genuinely
+    # a real word, and not other words glommed together.)
+    # Then run this whole algorithm on the remainder, thus effectively
+    # working on the string from both the front and the back.
+    my @possible_segments;
+    for my $prefix_length (1..min(length($unsegmented_string), 31)) {
         my $current_word = substr($unsegmented_string, 0, $prefix_length);
         push @possible_segments,
             [
@@ -96,9 +96,9 @@ sub segment {
                 $current_word
             )
             ];
-	}
+    }
 
-	# We can now work out the cumulative probability of all of these segments.
+    # We can now work out the cumulative probability of all of these segments.
         return @{
             (
                 map      { $_->[1] }
@@ -117,7 +117,7 @@ sub segment {
 }
 
 sub _cumulative_probability {
-	my ($self, $segments, $previous_word) = @_;
+    my ($self, $segments, $previous_word) = @_;
 
     my $overall_probability = 1;
     for my $word (@$segments) {
@@ -132,13 +132,13 @@ sub _cumulative_probability {
         $overall_probability *= $this_probability;
         $previous_word = $word;
     }
-	return $overall_probability;
+    return $overall_probability;
 }
 
 sub _unigram_probability {
-	my ($self, $word) = @_;
+    my ($self, $word) = @_;
 
-	return $self->unigrams->{$word} || $self->unigrams->{__unknown__}->($word);
+    return $self->unigrams->{$word} || $self->unigrams->{__unknown__}->($word);
 }
 
 =head2 unigrams
@@ -153,9 +153,9 @@ word or a typo.
 =cut
 
 sub unigrams {
-	my ($self) = @_;
+    my ($self) = @_;
 
-	return $self->{unigrams} ||= $self->_read_file('count_1w.txt');
+    return $self->{unigrams} ||= $self->_read_file('count_1w.txt');
 }
 
 =head2 bigrams
@@ -168,9 +168,9 @@ for combinations of words.
 =cut
 
 sub bigrams {
-	my ($self) = @_;
+    my ($self) = @_;
 
-	return $self->{bigrams} ||= $self->_read_file('count_2w.txt');
+    return $self->{bigrams} ||= $self->_read_file('count_2w.txt');
 }
 
 sub _read_file {
