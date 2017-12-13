@@ -77,16 +77,16 @@ sub segment {
     my ($self, $unsegmented_string) = @_;
 
     return if !length($unsegmented_string);
-    my @segments = $self->_segment($unsegmented_string, '<S>');
-    return map { $_->{word} } @segments;
+    my $combination = $self->_best_combination($unsegmented_string, '<S>');
+    return @{ $combination->{words} };
 }
 
 # Supplied with an unsegmented string and the previous word (or '<S>'
 # if this is the beginning of the input string), splits up the unsegmented
 # string into a word and a remainder, segments the remainder in turn,
 # and returns the most likely match.
-memoize('_segment', NORMALIZER => sub { "$_[1] $_[2]" });
-sub _segment {
+memoize('_best_combination', NORMALIZER => sub { "$_[1] $_[2]" });
+sub _best_combination {
     my ($self, $unsegmented_string, $previous_word) = @_;
 
     # Work out all the possible words at the beginning of this string.
@@ -94,46 +94,39 @@ sub _segment {
     # a real word, and not other words glommed together.)
     # Then run this whole algorithm on the remainder, thus effectively
     # working on the string from both the front and the back.
-    my @possible_segments;
+    my @possible_combinations;
     for my $prefix_length (1..min(length($unsegmented_string), 31)) {
         my $current_word = substr($unsegmented_string, 0, $prefix_length);
-        my $current_segment = {
-            word        => $current_word,
-            probability => $self->_probability($current_word, $previous_word),
-        };
-        push @possible_segments,
-            [
-            $current_segment,
-            $self->_segment(substr($unsegmented_string, $prefix_length),
-                $current_word)
-            ];
+        my $current_probability
+            = $self->_probability($current_word, $previous_word);
+        my $remainder_word = substr($unsegmented_string, $prefix_length);
+        if ($remainder_word
+            and my $remainder
+            = $self->_best_combination($remainder_word, $current_word))
+        {
+            my $combination = {
+                current => {
+                    words       => [$current_word],
+                    probability => $current_probability,
+
+                },
+                remainder => $remainder
+            };
+            $combination->{words} = [map { @{ $combination->{$_}{words} } }
+                    qw(current remainder)];
+            $combination->{probability} = $combination->{current}{probability}
+                * $combination->{remainder}{probability};
+            push @possible_combinations, $combination;
+        } else {
+            push @possible_combinations,
+                {
+                probability => $current_probability,
+                words       => [$current_word],
+                };
+        }
     }
-    return if !@possible_segments;
-
-    # We can now work out the cumulative probability of all of these segments.
-    return @{
-        (
-            map  { $_->[1] }
-            sort { $b->[0] <=> $a->[0] }
-            map {
-                my $segments = $_;
-                [$self->_cumulative_probability($segments), $segments]
-            } @possible_segments
-        )[0]
-    };
-}
-
-# Supplied with an arrayref of segments, multiplies all their probabilities
-# together to get a total probability.
-
-sub _cumulative_probability {
-    my ($self, $segments) = @_;
-
-    my $overall_probability = 1;
-    for my $segment (@$segments) {
-        $overall_probability *= $segment->{probability};
-    }
-    return $overall_probability;
+    return (sort { $b->{probability} <=> $a->{probability} }
+            @possible_combinations)[0];
 }
 
 # Supplied with a word and the previous word, returns the probability of it
