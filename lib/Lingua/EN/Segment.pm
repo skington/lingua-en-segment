@@ -94,8 +94,8 @@ sub _segment {
     for my $prefix_length (1..min(length($unsegmented_string), 31)) {
         my $current_word = substr($unsegmented_string, 0, $prefix_length);
         my $current_segment = {
-            word => $current_word,
-            $self->_probability($current_word, $previous_word),
+            word        => $current_word,
+            probability => $self->_probability($current_word, $previous_word),
         };
         push @possible_segments,
             [
@@ -124,8 +124,7 @@ sub _cumulative_probability {
 
     my $overall_probability = 1;
     for my $segment (@$segments) {
-        $overall_probability *= $segment->{bigram_probability}
-            // $segment->{unigram_probability};
+        $overall_probability *= $segment->{probability};
     }
     return $overall_probability;
 }
@@ -136,10 +135,10 @@ sub _probability {
     
     my $biword = $previous_word . ' ' . $word;
     if (exists $self->bigrams->{$biword}) {
-        return (bigram_probability => $self->bigrams->{$biword}
-                / $self->_unigram_probability($previous_word));
+        return $self->bigrams->{$biword}
+            / $self->_unigram_probability($previous_word);
     } else {
-        return (unigram_probability => $self->_unigram_probability($word));
+        return $self->_unigram_probability($word);
     }
 }
 
