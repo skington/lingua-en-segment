@@ -67,8 +67,6 @@ expect_segments(
 	),
 );
 
-### TODO: words where we don't recognise part of the input 
-
 # Complex tests that need bigram support.
 expect_segments(
           'inaholeinthegroundtherelivedahobbit'
@@ -79,14 +77,6 @@ expect_segments(
         not a nasty dirty wet hole filled with the ends of worms and an
         oozy smell nor yet a dry bare sandy hole with nothing in it to
         sit down on or to eat it was a hobbit hole and that means comfort)
-);
-expect_segments(
-          'faroutintheunchartedbackwatersoftheunfashionable'
-        . 'endofthewesternspiralarmofthegalaxy'
-        . 'liesasmallunregardedyellowsun' =>
-        qw(far out in the uncharted backwaters of the unfashionable
-        end of the western spiral arm of the galaxy
-        lies a small unregarded yellow sun)
 );
 
 # And we're done.
