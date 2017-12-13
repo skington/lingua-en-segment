@@ -73,12 +73,17 @@ string.
 
 =cut
 
-memoize('segment', NORMALIZER => sub { $_[1] });
 sub segment {
-    my ($self, $unsegmented_string, $previous_word) = @_;
+    my ($self, $unsegmented_string) = @_;
 
     return if !length($unsegmented_string);
-    $previous_word ||= '<S>';
+    my @segments = $self->_segment($unsegmented_string, '<S>');
+    return map { $_->{word} } @segments;
+}
+
+memoize('_segment', NORMALIZER => sub { "$_[1] $_[2]" });
+sub _segment {
+    my ($self, $unsegmented_string, $previous_word) = @_;
 
     # Work out all the possible words at the beginning of this string.
     # (31 characters is the longest word in our corpus that is genuinely
@@ -88,51 +93,54 @@ sub segment {
     my @possible_segments;
     for my $prefix_length (1..min(length($unsegmented_string), 31)) {
         my $current_word = substr($unsegmented_string, 0, $prefix_length);
+        my $current_segment = {
+            word => $current_word,
+            $self->_probability($current_word, $previous_word),
+        };
         push @possible_segments,
             [
-            $current_word,
-            $self->segment(
-                substr($unsegmented_string, $prefix_length),
-                $current_word
-            )
+            $current_segment,
+            $self->_segment(substr($unsegmented_string, $prefix_length),
+                $current_word)
             ];
     }
+    return if !@possible_segments;
 
     # We can now work out the cumulative probability of all of these segments.
-        return @{
-            (
-                map      { $_->[1] }
-                sort { $b->[0] <=> $a->[0] }
-                map {
-                    my $segments = $_;
-                    [
-                        $self->_cumulative_probability(
-                            $segments, $previous_word
-                        ),
-                        $segments
-                    ]
-                } @possible_segments
-            )[0]
-        };
+    return @{
+        (
+            map  { $_->[1] }
+            sort { $b->[0] <=> $a->[0] }
+            map {
+                my $segments = $_;
+                [$self->_cumulative_probability($segments), $segments]
+            } @possible_segments
+        )[0]
+    };
 }
 
 sub _cumulative_probability {
-    my ($self, $segments, $previous_word) = @_;
+    my ($self, $segments) = @_;
 
     my $overall_probability = 1;
-    for my $word (@$segments) {
-        my $this_probability;
-        my $biword = $previous_word . ' ' . $word;
-        if (exists $self->bigrams->{$biword}) {
-            $this_probability = $self->bigrams->{$biword}
-                / $self->_unigram_probability($previous_word);
-        } else {
-            $this_probability = $self->_unigram_probability($word);
-        }
-        $overall_probability *= $this_probability;
-        $previous_word = $word;
+    for my $segment (@$segments) {
+        $overall_probability *= $segment->{bigram_probability}
+            // $segment->{unigram_probability};
     }
     return $overall_probability;
+}
+
+memoize('_probability', NORMALIZER => sub { "$_[1] $_[2]" });
+sub _probability {
+    my ($self, $word, $previous_word) = @_;
+    
+    my $biword = $previous_word . ' ' . $word;
+    if (exists $self->bigrams->{$biword}) {
+        return (bigram_probability => $self->bigrams->{$biword}
+                / $self->_unigram_probability($previous_word));
+    } else {
+        return (unigram_probability => $self->_unigram_probability($word));
+    }
 }
 
 sub _unigram_probability {
