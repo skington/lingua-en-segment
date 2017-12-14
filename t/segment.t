@@ -27,6 +27,9 @@ expect_segments('choosespain' => qw(choose spain));
 expect_segments('whorepresents' => qw(who represents));
 expect_segments('expertsexchange' => qw(experts exchange));
 expect_segments('speedofart' => qw(speed of art));
+expect_segments(
+    'applesandpearsestateagents' => qw(apples and pears estate agents)
+);
 
 # Longer stuff to make sure we don't take ages.
 expect_segments('nowisthetimeforallgood' => qw(now is the time for all good));
