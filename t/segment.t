@@ -30,6 +30,8 @@ expect_segments('speedofart' => qw(speed of art));
 expect_segments(
     'applesandpearsestateagents' => qw(apples and pears estate agents)
 );
+expect_segments('bloomshair' => qw(blooms hair));
+expect_segments('cyan' => qw(cyan));
 
 # Longer stuff to make sure we don't take ages.
 expect_segments('nowisthetimeforallgood' => qw(now is the time for all good));

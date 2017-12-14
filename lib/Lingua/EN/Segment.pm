@@ -138,7 +138,9 @@ sub _probability {
     my ($self, $word, $previous_word) = @_;
     
     my $biword = $previous_word . ' ' . $word;
-    if (exists $self->bigrams->{$biword}) {
+    if (   exists $self->bigrams->{$biword}
+        && exists $self->unigrams->{$previous_word})
+    {
         return $self->bigrams->{$biword}
             / $self->_unigram_probability($previous_word);
     } else {
