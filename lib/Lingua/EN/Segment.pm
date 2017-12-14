@@ -4,7 +4,7 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 $VERSION = eval $VERSION;
 
 use Carp;
