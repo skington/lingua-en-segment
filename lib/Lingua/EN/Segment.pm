@@ -22,7 +22,7 @@ Lingua::EN::Segment - split English-language domain names etc. into words
  my $segmenter = Lingua::EN::Segment->new;
  for my $domain (<>) {
      chomp $domain;
-     my @words = $segmenter->segment_string($domain);
+     my @words = $segmenter->segment($domain);
      print "$domain: ", join(', ', @words), "\n";
  }
 
