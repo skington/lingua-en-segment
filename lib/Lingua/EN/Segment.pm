@@ -175,7 +175,7 @@ sub unigrams {
 
  Out: \%bigrams
 
-As L<unigrams>, but returns a lookup table of "word1 word2" => likelihood
+As L</unigrams>, but returns a lookup table of "word1 word2" => likelihood
 for combinations of words.
 
 =cut
