@@ -15,7 +15,7 @@ use Memoize;
 
 =head1 NAME
 
-Lingua::EN::Segment - split English-language domain names etc. into words
+Lingua::EN::Segment - Split English-language domain names etc. into words
 
 =head1 SYNOPSIS
 
